@@ -19,6 +19,24 @@ app.get('/', (req, res) => {
     res.redirect('/login.html');
 });
 
+app.get('/api/loader', (req, res) => {
+    const loaderPath = path.join(__dirname, 'loader.js');
+    
+    if (fs.existsSync(loaderPath)) {
+        const loaderContent = fs.readFileSync(loaderPath, 'utf8');
+        const scriptMatch = loaderContent.match(/const loaderScript = `([\s\S]*)`;/);
+        
+        if (scriptMatch && scriptMatch[1]) {
+            res.setHeader('Content-Type', 'text/plain');
+            res.send(scriptMatch[1]);
+        } else {
+            res.status(500).send('-- Error loading script');
+        }
+    } else {
+        res.status(404).send('-- Loader not found');
+    }
+});
+
 app.post('/api/register', (req, res) => {
     try {
         const { pairingCode, playerName, playerId } = req.body;
