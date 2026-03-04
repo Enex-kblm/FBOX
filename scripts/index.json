@@ -1,0 +1,11 @@
+{
+  "categories": [
+    {
+      "name": "Visual",
+      "icon": "fa-eye",
+      "scripts": [
+        { "id": "esp", "name": "ESP", "icon": "fa-eye" }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>F-BOX • Login</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .login-container {
+            max-width: 400px;
+            margin: 100px auto;
+            background: var(--surface);
+            border: 2px solid var(--border);
+            border-radius: 1rem;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .login-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .login-header i {
+            font-size: 4rem;
+            color: var(--accent);
+            margin-bottom: 1rem;
+        }
+        .login-header h1 {
+            font-size: 2rem;
+            color: var(--accent);
+        }
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .login-form input {
+            background: var(--surface-light);
+            border: 2px solid var(--border);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            color: var(--text);
+            font-size: 1rem;
+            text-align: center;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+        .login-form input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+        .login-form button {
+            background: var(--accent);
+            border: none;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            color: var(--bg);
+            font-weight: 800;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .login-form button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px var(--accent-dim);
+        }
+        .login-info {
+            text-align: center;
+            margin-top: 1rem;
+            color: var(--text-dim);
+            font-size: 0.9rem;
+        }
+        .login-info i {
+            color: var(--accent);
+        }
+        .error {
+            color: #ff3355;
+            text-align: center;
+            margin-top: 1rem;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="gradient"></div>
+    
+    <div class="login-container">
+        <div class="login-header">
+            <i class="fas fa-cube"></i>
+            <h1>F-BOX</h1>
+            <p style="color: var(--text-dim);">Enter your pairing code</p>
+        </div>
+        
+        <div class="login-form">
+            <input type="text" id="pairingCode" placeholder="XXX-00" maxlength="6" autocomplete="off">
+            <button onclick="login()">
+                <i class="fas fa-sign-in-alt"></i> ACCESS DASHBOARD
+            </button>
+        </div>
+        
+        <div class="login-info">
+            <i class="fas fa-info-circle"></i> 
+            Pairing code in console Roblox (F9)
+        </div>
+        
+        <div id="errorMessage" class="error">
+            <i class="fas fa-exclamation-triangle"></i> Invalid pairing code
+        </div>
+    </div>
+
+    <script>
+        async function login() {
+            const code = document.getElementById('pairingCode').value.trim().toUpperCase();
+            
+            if (!code || code.length < 5) {
+                showError('Masukin pairing code dulu!');
+                return;
+            }
+            
+            try {
+                const res = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pairingCode: code })
+                });
+                
+                const data = await res.json();
+                
+                if (data.status === 'success') {
+                    localStorage.setItem('fbox_session', JSON.stringify({
+                        code: code,
+                        player: data.player
+                    }));
+                    
+                    window.location.href = '/dashboard.html';
+                } else {
+                    showError('Kode gak valid!');
+                }
+            } catch (err) {
+                showError('Server error!');
+            }
+        }
+        
+        function showError(msg) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.style.display = 'block';
+            errorDiv.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${msg}`;
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 3000);
+        }
+        
+        window.onload = () => {
+            const session = localStorage.getItem('fbox_session');
+            if (session) {
+                window.location.href = '/dashboard.html';
+            }
+        };
+    </script>
+</body>
+</html>

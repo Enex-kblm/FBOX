@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>F-BOX • Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="gradient"></div>
+
+    <div class="container">
+        <div class="header">
+            <div class="logo">
+                <i class="fas fa-cube"></i>
+                <h1>F-<span>BOX</span></h1>
+            </div>
+            <div class="status">
+                <span class="dot"></span>
+                <span id="statusText">Connected</span>
+            </div>
+        </div>
+
+        <div class="queue-bar" style="justify-content: space-between;">
+            <div class="queue-info">
+                <i class="fas fa-user"></i>
+                <span>Welcome, <strong id="playerName">Loading...</strong></span>
+            </div>
+            <button onclick="logout()" class="clear-queue" style="border-color: #ff3355;">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+        </div>
+
+        <div class="queue-bar">
+            <div class="queue-info">
+                <i class="fas fa-tasks"></i>
+                <span>Command Queue:</span>
+                <strong id="queueCount">0</strong>
+            </div>
+            <button onclick="clearQueue()" class="clear-queue">
+                <i class="fas fa-trash-alt"></i> Clear
+            </button>
+        </div>
+
+        <div class="categories" id="categories">
+            <div class="loading">Loading scripts...</div>
+        </div>
+
+        <div class="custom-section">
+            <h3><i class="fas fa-terminal"></i> Custom Command</h3>
+            <div class="custom-box">
+                <textarea id="customScript" placeholder="-- Write your Lua script here..."></textarea>
+                <button onclick="sendCustomScript()" class="send-btn">
+                    <i class="fas fa-paper-plane"></i> SEND
+                </button>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>F-BOX</p>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">
+        <i class="fas fa-check-circle"></i>
+        <span>Script sent!</span>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        const session = JSON.parse(localStorage.getItem('fbox_session'));
+        if (!session) {
+            window.location.href = '/login.html';
+        } else {
+            document.getElementById('playerName').textContent = session.player.playerName;
+        }
+        
+        function logout() {
+            localStorage.removeItem('fbox_session');
+            window.location.href = '/login.html';
+        }
+    </script>
+</body>
+</html>
