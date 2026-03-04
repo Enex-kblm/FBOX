@@ -69,6 +69,21 @@ app.post('/api/login', (req, res) => {
     }
 });
 
+app.get('/api/players', (req, res) => {
+    const dbPath = path.join(__dirname, '..', 'database.json');
+    
+    try {
+        if (fs.existsSync(dbPath)) {
+            const db = JSON.parse(fs.readFileSync(dbPath, 'utf8'));
+            res.json(db.players || {});
+        } else {
+            res.json({});
+        }
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 app.get('/api/scripts', (req, res) => {
     try {
         const indexPath = path.join(__dirname, '..', 'scripts', 'index.json');
