@@ -61,22 +61,30 @@ app.post('/api/register', (req, res) => {
 app.post('/api/login', (req, res) => {
     try {
         const { pairingCode } = req.body;
-
+        
+        console.log('LOGIN ATTEMPT:', pairingCode);
+        console.log('CURRENT PLAYERS:', JSON.stringify(players));
+        
         if (!pairingCode) {
             return res.status(400).json({ error: 'Pairing code required' });
         }
 
         if (players[pairingCode]) {
+            console.log('LOGIN SUCCESS:', pairingCode);
+            
             players[pairingCode].lastSeen = new Date().toISOString();
-
-            res.json({ 
+            
+            return res.json({ 
                 status: 'success', 
                 player: players[pairingCode] 
             });
         } else {
-            res.status(401).json({ error: 'Invalid pairing code' });
+            console.log('LOGIN FAILED - CODE NOT FOUND:', pairingCode);
+            console.log('Available codes:', Object.keys(players));
+            return res.status(401).json({ error: 'Invalid pairing code' });
         }
     } catch (error) {
+        console.error('LOGIN ERROR:', error);
         res.status(500).json({ error: 'Internal Server Error' });
     }
 });
