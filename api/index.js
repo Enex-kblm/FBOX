@@ -13,11 +13,13 @@ app.use((req, res, next) => {
     next();
 });
 
+let players = {};
+
 app.get('/', (req, res) => {
     res.redirect('/login.html');
 });
 
-app.post('/api/register', async (req, res) => {
+app.post('/api/register', (req, res) => {
     try {
         const { pairingCode, playerName, playerId } = req.body;
         
@@ -28,121 +30,61 @@ app.post('/api/register', async (req, res) => {
             });
         }
 
-        const dbPath = path.join(__dirname, '..', 'database.json');
-        console.log('📁 Database path:', dbPath);
-
-        let db = { players: {} };
-        
-        if (fs.existsSync(dbPath)) {
-            try {
-                const data = fs.readFileSync(dbPath, 'utf8');
-                db = JSON.parse(data);
-                console.log('✅ Database berhasil dibaca');
-            } catch (readError) {
-                console.error('❌ Gagal baca database:', readError);
-                db = { players: {} };
-            }
-        } else {
-            console.log('📁 Database belum ada, akan dibuat baru');
-        }
-
-        if (db.players[pairingCode]) {
+        if (players[pairingCode]) {
             return res.status(400).json({ 
                 error: 'Pairing code sudah digunakan',
-                pairingCode: pairingCode
+                pairingCode: pairingCode 
             });
         }
 
-        db.players[pairingCode] = {
+        players[pairingCode] = {
             playerId: String(playerId),
             playerName: String(playerName),
             registeredAt: new Date().toISOString(),
             lastSeen: new Date().toISOString()
         };
 
-        try {
-            fs.writeFileSync(dbPath, JSON.stringify(db, null, 2));
-            console.log('✅ Player berhasil disimpan:', pairingCode);
-        } catch (writeError) {
-            console.error('❌ Gagal menulis database:', writeError);
-            return res.status(500).json({ 
-                error: 'Gagal menyimpan data',
-                detail: writeError.message 
-            });
-        }
-
         res.json({ 
             status: 'success', 
             message: 'Registration successful',
-            pairingCode: pairingCode
+            pairingCode: pairingCode 
         });
 
     } catch (error) {
-        console.error('🔥 UNHANDLED ERROR:', error);
         res.status(500).json({ 
             error: 'Internal Server Error',
-            detail: error.message,
-            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+            detail: error.message 
         });
     }
 });
 
-app.post('/api/login', async (req, res) => {
+app.post('/api/login', (req, res) => {
     try {
         const { pairingCode } = req.body;
-        
+
         if (!pairingCode) {
             return res.status(400).json({ error: 'Pairing code required' });
         }
-        
-        const dbPath = path.join(__dirname, '..', 'database.json');
-        let db = { players: {} };
-        
-        if (fs.existsSync(dbPath)) {
-            try {
-                const data = fs.readFileSync(dbPath, 'utf8');
-                db = JSON.parse(data);
-            } catch (readError) {
-                console.error('❌ Gagal baca database:', readError);
-                return res.status(500).json({ error: 'Database error' });
-            }
-        }
-        
-        if (db.players[pairingCode]) {
-            db.players[pairingCode].lastSeen = new Date().toISOString();
-            
-            try {
-                fs.writeFileSync(dbPath, JSON.stringify(db, null, 2));
-            } catch (writeError) {
-                console.error('❌ Gagal update last seen:', writeError);
-            }
-            
+
+        if (players[pairingCode]) {
+            players[pairingCode].lastSeen = new Date().toISOString();
+
             res.json({ 
                 status: 'success', 
-                player: db.players[pairingCode]
+                player: players[pairingCode] 
             });
         } else {
             res.status(401).json({ error: 'Invalid pairing code' });
         }
     } catch (error) {
-        console.error('🔥 Login error:', error);
         res.status(500).json({ error: 'Internal Server Error' });
     }
 });
 
 app.get('/api/players', (req, res) => {
     try {
-        const dbPath = path.join(__dirname, '..', 'database.json');
-        
-        if (fs.existsSync(dbPath)) {
-            const data = fs.readFileSync(dbPath, 'utf8');
-            const db = JSON.parse(data);
-            res.json(db.players || {});
-        } else {
-            res.json({});
-        }
+        res.json(players);
     } catch (err) {
-        console.error('❌ Error get players:', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -158,7 +100,6 @@ app.get('/api/scripts', (req, res) => {
         const data = fs.readFileSync(indexPath, 'utf8');
         res.json(JSON.parse(data));
     } catch (err) {
-        console.error('❌ Error loading scripts:', err);
         res.json({ categories: [] });
     }
 });
@@ -166,10 +107,8 @@ app.get('/api/scripts', (req, res) => {
 app.get('/api/scripts/:category/:name', (req, res) => {
     try {
         const { category, name } = req.params;
-        
         const safeCategory = path.basename(category);
         const safeName = path.basename(name);
-        
         const scriptPath = path.join(__dirname, '..', 'scripts', safeCategory, `${safeName}.lua`);
         
         if (!fs.existsSync(scriptPath)) {
@@ -185,7 +124,6 @@ app.get('/api/scripts/:category/:name', (req, res) => {
             script: scriptContent
         });
     } catch (err) {
-        console.error('❌ Error loading script:', err);
         res.status(404).json({ error: 'Script not found' });
     }
 });
@@ -200,7 +138,6 @@ app.get('/api/command', (req, res) => {
             res.send('null');
         }
     } catch (err) {
-        console.error('❌ Error get command:', err);
         res.send('null');
     }
 });
@@ -215,7 +152,6 @@ app.post('/api/command', (req, res) => {
             res.status(400).json({ error: 'No script provided' });
         }
     } catch (err) {
-        console.error('❌ Error post command:', err);
         res.status(500).json({ error: 'Internal Server Error' });
     }
 });
@@ -225,7 +161,6 @@ app.delete('/api/queue', (req, res) => {
         commands = [];
         res.json({ status: 'cleared', message: 'Queue cleared' });
     } catch (err) {
-        console.error('❌ Error clear queue:', err);
         res.status(500).json({ error: 'Internal Server Error' });
     }
 });
@@ -234,7 +169,6 @@ app.get('/api/queue/length', (req, res) => {
     try {
         res.json({ length: commands.length });
     } catch (err) {
-        console.error('❌ Error get queue length:', err);
         res.json({ length: 0 });
     }
 });
