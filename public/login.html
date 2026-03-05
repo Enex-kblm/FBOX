@@ -80,6 +80,86 @@
             margin-top: 1rem;
             display: none;
         }
+
+        /* Loader Section */
+        .loader-section {
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .loader-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            color: var(--accent);
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .loader-header i {
+            font-size: 1rem;
+        }
+
+        .loader-box {
+            display: flex;
+            gap: 0.5rem;
+            background: var(--surface-light);
+            border: 2px solid var(--border);
+            border-radius: 0.5rem;
+            padding: 0.5rem;
+        }
+
+        .loader-box code {
+            flex: 1;
+            background: var(--bg);
+            padding: 0.8rem;
+            border-radius: 0.3rem;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.8rem;
+            color: #00ff88;
+            word-break: break-all;
+            white-space: pre-wrap;
+        }
+
+        .copy-loader-btn {
+            background: var(--accent);
+            border: none;
+            border-radius: 0.3rem;
+            padding: 0 1rem;
+            color: var(--bg);
+            font-weight: 600;
+            font-size: 0.8rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            transition: all 0.2s;
+        }
+
+        .copy-loader-btn:hover {
+            filter: brightness(1.1);
+            transform: scale(1.02);
+        }
+
+        .copy-loader-btn i {
+            font-size: 0.9rem;
+        }
+
+        .loader-info {
+            margin-top: 0.5rem;
+            color: var(--text-dim);
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .loader-info i {
+            color: var(--accent);
+            font-size: 0.8rem;
+        }
     </style>
 </head>
 <body>
@@ -107,6 +187,22 @@
         <div id="errorMessage" class="error">
             <i class="fas fa-exclamation-triangle"></i> Invalid pairing code
         </div>
+
+        <div class="loader-section">
+            <div class="loader-header">
+                <i class="fas fa-code"></i>
+                <span>Loader Script</span>
+            </div>
+            
+            <div class="loader-box">
+                <code id="loaderScript">loadstring(game:HttpGet("https://fbox-alpha.vercel.app/api/loader"))()</code>
+                <button class="copy-loader-btn" onclick="copyLoaderScript()">
+                    <i class="fas fa-copy"></i> COPY
+                </button>
+            </div>
+            
+        </div>
+
     </div>
 
     <script>
@@ -149,6 +245,28 @@
             setTimeout(() => {
                 errorDiv.style.display = 'none';
             }, 3000);
+        }
+
+        async function copyLoaderScript() {
+            const scriptText = document.getElementById('loaderScript').innerText;
+            
+            try {
+                await navigator.clipboard.writeText(scriptText);
+                
+                const btn = document.querySelector('.copy-loader-btn');
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-check"></i> COPIED!';
+                btn.style.background = '#00ff88';
+                btn.style.color = '#000';
+                
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.style.background = '';
+                    btn.style.color = '';
+                }, 2000);
+            } catch (err) {
+                alert('Gagal copy!');
+            }
         }
         
         window.onload = () => {
