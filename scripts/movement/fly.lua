@@ -1,3 +1,4 @@
+-- FLY SCRIPT - TOGGLE VERSION
 local player = game.Players.LocalPlayer
 local flying = false
 
@@ -17,6 +18,7 @@ local function flyOn()
     flying = true
     print("✅ Fly ON")
     
+    -- Loop movement
     coroutine.wrap(function()
         local ui = game:GetService("UserInputService")
         while flying do
@@ -59,6 +61,7 @@ local function flyOff()
     print("❌ Fly OFF")
 end
 
+-- Export fungsi global
 _G.fly = {
     on = flyOn,
     off = flyOff,

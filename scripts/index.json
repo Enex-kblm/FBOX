@@ -1,6 +1,13 @@
 {
   "categories": [
     {
+      "name": "Movement",
+      "icon": "fa-running",
+      "scripts": [
+        { "id": "fly", "name": "Fly", "icon": "fa-feather" }
+      ]
+    },
+    {
       "name": "Visual",
       "icon": "fa-eye",
       "scripts": [

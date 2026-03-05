@@ -5,9 +5,9 @@ const categoriesDiv = document.getElementById('categories');
 const toast = document.getElementById('toast');
 const customScript = document.getElementById('customScript');
 
+// State untuk toggle
 let toggleState = {
     fly: false,
-    speed: false,
     esp: false
 };
 
@@ -46,8 +46,13 @@ function displayCategories(categories) {
         `;
         
         cat.scripts.forEach(script => {
+            // Cek apakah script ini support toggle (bisa ditambahin nanti)
+            const isTogglable = ['fly', 'esp'].includes(script.id);
+            
             html += `
-                <button class="script-btn toggle-btn" data-id="${script.id}" onclick="toggleScript('${cat.name.toLowerCase()}', '${script.id}')">
+                <button class="script-btn ${isTogglable ? 'toggle-btn' : ''} ${toggleState[script.id] ? 'active' : ''}" 
+                        data-id="${script.id}"
+                        onclick="${isTogglable ? 'toggleScript' : 'sendScript'}('${cat.name.toLowerCase()}', '${script.id}')">
                     <i class="fas ${script.icon}"></i>
                     <span>${script.name}</span>
                 </button>
@@ -61,15 +66,14 @@ function displayCategories(categories) {
     });
     
     categoriesDiv.innerHTML = html;
-    
-    updateAllButtons();
 }
 
+// Fungsi toggle untuk script yang support ON/OFF
 async function toggleScript(category, scriptId) {
-    const currentState = toggleState[scriptId] || false;
-    const newState = !currentState;
+    const newState = !toggleState[scriptId];
     
-    const command = newState ? '_G.' + scriptId + '.on()' : '_G.' + scriptId + '.off()';
+    // Kirim command ON atau OFF
+    const command = newState ? `_G.${scriptId}.on()` : `_G.${scriptId}.off()`;
     
     try {
         const sendRes = await fetch(API + '/api/command', {
@@ -81,47 +85,51 @@ async function toggleScript(category, scriptId) {
         const result = await sendRes.json();
         
         if (result.status === 'ok') {
+            // Update state
             toggleState[scriptId] = newState;
             
-            updateButton(scriptId, newState);
+            // Update tampilan tombol
+            const btn = document.querySelector(`[data-id="${scriptId}"]`);
+            if (newState) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
             
             showToast(`${scriptId} ${newState ? 'ON' : 'OFF'}`);
+            updateQueueStatus();
         }
     } catch (err) {
         showToast('Failed to toggle', 'error');
     }
 }
 
-function updateButton(scriptId, isActive) {
-    const btn = document.querySelector(`[data-id="${scriptId}"]`);
-    if (!btn) return;
-    
-    if (isActive) {
-        btn.classList.add('active');
-        btn.style.background = 'linear-gradient(135deg, #00ff88, #00aa88)';
-        btn.style.borderColor = '#00ff88';
-        btn.style.boxShadow = '0 0 20px #00ff88';
-        btn.querySelector('i').style.color = '#000';
-        btn.querySelector('span').style.color = '#000';
-        btn.querySelector('span').style.fontWeight = '800';
-    } else {
-        btn.classList.remove('active');
-        btn.style.background = '';
-        btn.style.borderColor = '';
-        btn.style.boxShadow = '';
-        btn.querySelector('i').style.color = '';
-        btn.querySelector('span').style.color = '';
-        btn.querySelector('span').style.fontWeight = '';
-    }
-}
-
-function updateAllButtons() {
-    Object.keys(toggleState).forEach(scriptId => {
-        updateButton(scriptId, toggleState[scriptId]);
-    });
-}
-
+// Fungsi untuk script biasa (non-toggle)
 async function sendScript(category, scriptId) {
+    try {
+        const res = await fetch(API + `/api/scripts/${category}/${scriptId}`);
+        const data = await res.json();
+        
+        if (!data.script) {
+            showToast('Script not found', 'error');
+            return;
+        }
+        
+        const sendRes = await fetch(API + '/api/command', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ script: data.script })
+        });
+        
+        const result = await sendRes.json();
+        
+        if (result.status === 'ok') {
+            showToast(`✅ ${data.name} sent!`);
+            updateQueueStatus();
+        }
+    } catch (err) {
+        showToast('Failed to send', 'error');
+    }
 }
 
 async function sendCustomScript() {
