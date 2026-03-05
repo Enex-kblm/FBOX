@@ -5,6 +5,12 @@ const categoriesDiv = document.getElementById('categories');
 const toast = document.getElementById('toast');
 const customScript = document.getElementById('customScript');
 
+let toggleState = {
+    fly: false,
+    speed: false,
+    esp: false
+};
+
 document.addEventListener('DOMContentLoaded', () => {
     loadScripts();
     updateQueueStatus();
@@ -41,7 +47,7 @@ function displayCategories(categories) {
         
         cat.scripts.forEach(script => {
             html += `
-                <button class="script-btn" onclick="sendScript('${cat.name.toLowerCase()}', '${script.id}')">
+                <button class="script-btn toggle-btn" data-id="${script.id}" onclick="toggleScript('${cat.name.toLowerCase()}', '${script.id}')">
                     <i class="fas ${script.icon}"></i>
                     <span>${script.name}</span>
                 </button>
@@ -55,33 +61,67 @@ function displayCategories(categories) {
     });
     
     categoriesDiv.innerHTML = html;
+    
+    updateAllButtons();
 }
 
-async function sendScript(category, scriptId) {
+async function toggleScript(category, scriptId) {
+    const currentState = toggleState[scriptId] || false;
+    const newState = !currentState;
+    
+    const command = newState ? '_G.' + scriptId + '.on()' : '_G.' + scriptId + '.off()';
+    
     try {
-        const res = await fetch(API + `/api/scripts/${category}/${scriptId}`);
-        const data = await res.json();
-        
-        if (!data.script) {
-            showToast('Script not found', 'error');
-            return;
-        }
-        
         const sendRes = await fetch(API + '/api/command', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ script: data.script })
+            body: JSON.stringify({ script: command })
         });
         
         const result = await sendRes.json();
         
         if (result.status === 'ok') {
-            showToast(`✅ ${data.name} sent!`);
-            updateQueueStatus();
+            toggleState[scriptId] = newState;
+            
+            updateButton(scriptId, newState);
+            
+            showToast(`${scriptId} ${newState ? 'ON' : 'OFF'}`);
         }
     } catch (err) {
-        showToast('Failed to send', 'error');
+        showToast('Failed to toggle', 'error');
     }
+}
+
+function updateButton(scriptId, isActive) {
+    const btn = document.querySelector(`[data-id="${scriptId}"]`);
+    if (!btn) return;
+    
+    if (isActive) {
+        btn.classList.add('active');
+        btn.style.background = 'linear-gradient(135deg, #00ff88, #00aa88)';
+        btn.style.borderColor = '#00ff88';
+        btn.style.boxShadow = '0 0 20px #00ff88';
+        btn.querySelector('i').style.color = '#000';
+        btn.querySelector('span').style.color = '#000';
+        btn.querySelector('span').style.fontWeight = '800';
+    } else {
+        btn.classList.remove('active');
+        btn.style.background = '';
+        btn.style.borderColor = '';
+        btn.style.boxShadow = '';
+        btn.querySelector('i').style.color = '';
+        btn.querySelector('span').style.color = '';
+        btn.querySelector('span').style.fontWeight = '';
+    }
+}
+
+function updateAllButtons() {
+    Object.keys(toggleState).forEach(scriptId => {
+        updateButton(scriptId, toggleState[scriptId]);
+    });
+}
+
+async function sendScript(category, scriptId) {
 }
 
 async function sendCustomScript() {
