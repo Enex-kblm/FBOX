@@ -1,27 +1,40 @@
--- FLY SCRIPT - TOGGLE VERSION
+-- FLY TOGGLE SCRIPT
 local player = game.Players.LocalPlayer
-local flying = false
 
-local function flyOn()
-    if flying then return end
+_G.fly = _G.fly or {}
+_G.fly.active = false
+
+_G.fly.on = function()
+    if _G.fly.active then return end
+    
     local char = player.Character
-    if not char then return end
+    if not char then 
+        print("❌ Fly: No character")
+        return 
+    end
     
     local root = char:FindFirstChild("HumanoidRootPart")
-    if not root then return end
+    if not root then 
+        print("❌ Fly: No root part")
+        return 
+    end
+    
+    -- Hapus kalo udah ada
+    local old = root:FindFirstChild("BodyVelocity")
+    if old then old:Destroy() end
     
     local bv = Instance.new("BodyVelocity")
     bv.MaxForce = Vector3.new(1000000, 1000000, 1000000)
     bv.Velocity = Vector3.new(0, 0, 0)
     bv.Parent = root
     
-    flying = true
+    _G.fly.active = true
     print("✅ Fly ON")
     
-    -- Loop movement
+    -- Movement loop
     coroutine.wrap(function()
         local ui = game:GetService("UserInputService")
-        while flying do
+        while _G.fly.active do
             local move = Vector3.new(0, 0, 0)
             if ui:IsKeyDown(Enum.KeyCode.W) then
                 move = move + workspace.CurrentCamera.CFrame.LookVector
@@ -47,8 +60,10 @@ local function flyOn()
     end)()
 end
 
-local function flyOff()
-    if not flying then return end
+_G.fly.off = function()
+    if not _G.fly.active then return end
+    
+    _G.fly.active = false
     local char = player.Character
     if char then
         local root = char:FindFirstChild("HumanoidRootPart")
@@ -57,22 +72,20 @@ local function flyOff()
             if bv then bv:Destroy() end
         end
     end
-    flying = false
     print("❌ Fly OFF")
 end
 
--- Export fungsi global
-_G.fly = {
-    on = flyOn,
-    off = flyOff,
-    toggle = function()
-        if flying then flyOff() else flyOn() end
-    end,
-    status = function() return flying end
-}
+_G.fly.toggle = function()
+    if _G.fly.active then
+        _G.fly.off()
+    else
+        _G.fly.on()
+    end
+end
 
+-- Matiin kalo character respawn
 player.CharacterAdded:Connect(function()
-    flying = false
+    _G.fly.active = false
 end)
 
 print("✅ Fly script loaded - Use _G.fly.on() / _G.fly.off()")

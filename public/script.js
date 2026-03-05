@@ -46,13 +46,11 @@ function displayCategories(categories) {
         `;
         
         cat.scripts.forEach(script => {
-            // Cek apakah script ini support toggle (bisa ditambahin nanti)
-            const isTogglable = ['fly', 'esp'].includes(script.id);
-            
+            // Semua script jadi toggle
             html += `
-                <button class="script-btn ${isTogglable ? 'toggle-btn' : ''} ${toggleState[script.id] ? 'active' : ''}" 
+                <button class="script-btn ${toggleState[script.id] ? 'active' : ''}" 
                         data-id="${script.id}"
-                        onclick="${isTogglable ? 'toggleScript' : 'sendScript'}('${cat.name.toLowerCase()}', '${script.id}')">
+                        onclick="toggleScript('${script.id}')">
                     <i class="fas ${script.icon}"></i>
                     <span>${script.name}</span>
                 </button>
@@ -68,8 +66,8 @@ function displayCategories(categories) {
     categoriesDiv.innerHTML = html;
 }
 
-// Fungsi toggle untuk script yang support ON/OFF
-async function toggleScript(category, scriptId) {
+// Fungsi toggle universal
+async function toggleScript(scriptId) {
     const newState = !toggleState[scriptId];
     
     // Kirim command ON atau OFF
@@ -101,34 +99,6 @@ async function toggleScript(category, scriptId) {
         }
     } catch (err) {
         showToast('Failed to toggle', 'error');
-    }
-}
-
-// Fungsi untuk script biasa (non-toggle)
-async function sendScript(category, scriptId) {
-    try {
-        const res = await fetch(API + `/api/scripts/${category}/${scriptId}`);
-        const data = await res.json();
-        
-        if (!data.script) {
-            showToast('Script not found', 'error');
-            return;
-        }
-        
-        const sendRes = await fetch(API + '/api/command', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ script: data.script })
-        });
-        
-        const result = await sendRes.json();
-        
-        if (result.status === 'ok') {
-            showToast(`✅ ${data.name} sent!`);
-            updateQueueStatus();
-        }
-    } catch (err) {
-        showToast('Failed to send', 'error');
     }
 }
 
