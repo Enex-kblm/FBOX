@@ -1,8 +1,9 @@
 const loaderScript = `
--- F-BOX LOADER - UI + COMMAND LOOP
+-- F-BOX LOADER - COMPLETE VERSION
 local player = game.Players.LocalPlayer
 local SERVER_URL = "https://fbox-alpha.vercel.app"
 
+-- ========== GENERATE PAIRING CODE ==========
 local function generatePairingCode()
     local letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
     local numbers = "0123456789"
@@ -22,11 +23,7 @@ end
 local PAIRING_CODE = generatePairingCode()
 local LOGIN_URL = SERVER_URL .. "/login.html"
 
-local function copyToClipboard(text)
-    local success = pcall(function() setclipboard(text) end)
-    return success
-end
-
+-- ========== REGISTER ==========
 local function register()
     local data = {
         pairingCode = PAIRING_CODE,
@@ -42,23 +39,138 @@ local function register()
             Body = jsonData
         })
     end)
-    return success and response and response.StatusCode == 200
-end
-
-local function getCommand()
-    local success, response = pcall(function()
-        return request({
-            Url = SERVER_URL .. "/api/command",
-            Method = "GET"
-        })
-    end)
-    if success and response.StatusCode == 200 then
-        return response.Body
-    end
-    return nil
 end
 
 register()
+
+-- ========== FLY SCRIPT ==========
+_G.fly = _G.fly or {}
+_G.fly.active = false
+
+_G.fly.on = function()
+    if _G.fly.active then return end
+    local char = player.Character
+    if not char then return end
+    local root = char:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+    
+    local bv = Instance.new("BodyVelocity")
+    bv.MaxForce = Vector3.new(1000000, 1000000, 1000000)
+    bv.Velocity = Vector3.new(0, 0, 0)
+    bv.Parent = root
+    _G.fly.active = true
+    print("✅ Fly ON")
+    
+    coroutine.wrap(function()
+        local ui = game:GetService("UserInputService")
+        while _G.fly.active do
+            local move = Vector3.new(0, 0, 0)
+            if ui:IsKeyDown(Enum.KeyCode.W) then
+                move = move + workspace.CurrentCamera.CFrame.LookVector
+            end
+            if ui:IsKeyDown(Enum.KeyCode.S) then
+                move = move - workspace.CurrentCamera.CFrame.LookVector
+            end
+            if ui:IsKeyDown(Enum.KeyCode.A) then
+                move = move - workspace.CurrentCamera.CFrame.RightVector
+            end
+            if ui:IsKeyDown(Enum.KeyCode.D) then
+                move = move + workspace.CurrentCamera.CFrame.RightVector
+            end
+            if ui:IsKeyDown(Enum.KeyCode.Space) then
+                move = move + Vector3.new(0, 1, 0)
+            end
+            if ui:IsKeyDown(Enum.KeyCode.LeftShift) then
+                move = move - Vector3.new(0, 1, 0)
+            end
+            bv.Velocity = move * 50
+            wait(0.1)
+        end
+    end)()
+end
+
+_G.fly.off = function()
+    if not _G.fly.active then return end
+    _G.fly.active = false
+    local char = player.Character
+    if char then
+        local root = char:FindFirstChild("HumanoidRootPart")
+        if root then
+            local bv = root:FindFirstChild("BodyVelocity")
+            if bv then bv:Destroy() end
+        end
+    end
+    print("❌ Fly OFF")
+end
+
+_G.fly.toggle = function()
+    if _G.fly.active then _G.fly.off() else _G.fly.on() end
+end
+
+-- ========== ESP SCRIPT ==========
+_G.esp = _G.esp or {}
+_G.esp.active = false
+_G.esp.objects = {}
+
+_G.esp.on = function()
+    if _G.esp.active then return end
+    _G.esp.active = true
+    print("✅ ESP ON")
+    
+    coroutine.wrap(function()
+        while _G.esp.active do
+            for _, v in pairs(game.Players:GetPlayers()) do
+                if v ~= player and v.Character and v.Character:FindFirstChild("Head") then
+                    if not v.Character:FindFirstChild("ESP_Highlight") then
+                        local hl = Instance.new("Highlight")
+                        hl.Name = "ESP_Highlight"
+                        hl.Parent = v.Character
+                        hl.FillColor = Color3.new(1, 0, 0)
+                        hl.FillTransparency = 0.5
+                        
+                        local billboard = Instance.new("BillboardGui")
+                        billboard.Name = "ESP_Name"
+                        billboard.Parent = v.Character.Head
+                        billboard.Size = UDim2.new(0, 200, 0, 50)
+                        billboard.StudsOffset = Vector3.new(0, 3, 0)
+                        
+                        local label = Instance.new("TextLabel")
+                        label.Parent = billboard
+                        label.Size = UDim2.new(1, 0, 1, 0)
+                        label.BackgroundTransparency = 1
+                        label.Text = v.Name
+                        label.TextColor3 = Color3.new(1, 1, 1)
+                        label.TextScaled = true
+                        
+                        table.insert(_G.esp.objects, {hl, billboard})
+                    end
+                end
+            end
+            wait(1)
+        end
+    end)()
+end
+
+_G.esp.off = function()
+    if not _G.esp.active then return end
+    _G.esp.active = false
+    for _, objPair in pairs(_G.esp.objects) do
+        for _, obj in pairs(objPair) do
+            if obj and obj.Parent then obj:Destroy() end
+        end
+    end
+    _G.esp.objects = {}
+    print("❌ ESP OFF")
+end
+
+_G.esp.toggle = function()
+    if _G.esp.active then _G.esp.off() else _G.esp.on() end
+end
+
+-- ========== UI ==========
+local function copyToClipboard(text)
+    pcall(function() setclipboard(text) end)
+end
 
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "FBOX_LoaderUI"
@@ -90,10 +202,7 @@ closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 closeBtn.TextScaled = true
 closeBtn.Font = Enum.Font.GothamBold
 closeBtn.Parent = mainFrame
-
-local closeCorner = Instance.new("UICorner")
-closeCorner.CornerRadius = UDim.new(0, 4)
-closeCorner.Parent = closeBtn
+closeBtn.MouseButton1Click:Connect(function() screenGui:Destroy() end)
 
 local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, -30, 0, 30)
@@ -115,10 +224,12 @@ codeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 codeBtn.TextScaled = true
 codeBtn.Font = Enum.Font.Gotham
 codeBtn.Parent = mainFrame
-
-local codeCorner = Instance.new("UICorner")
-codeCorner.CornerRadius = UDim.new(0, 5)
-codeCorner.Parent = codeBtn
+codeBtn.MouseButton1Click:Connect(function()
+    copyToClipboard(PAIRING_CODE)
+    codeBtn.Text = "✅ Copied!"
+    wait(1)
+    codeBtn.Text = "📋 " .. PAIRING_CODE
+end)
 
 local urlBtn = Instance.new("TextButton")
 urlBtn.Size = UDim2.new(1, -20, 0, 30)
@@ -129,55 +240,40 @@ urlBtn.TextColor3 = Color3.fromRGB(100, 200, 255)
 urlBtn.TextScaled = true
 urlBtn.Font = Enum.Font.Gotham
 urlBtn.Parent = mainFrame
-
-local urlCorner = Instance.new("UICorner")
-urlCorner.CornerRadius = UDim.new(0, 5)
-urlCorner.Parent = urlBtn
-
-closeBtn.MouseButton1Click:Connect(function()
-    screenGui:Destroy()
-end)
-
-codeBtn.MouseButton1Click:Connect(function()
-    if copyToClipboard(PAIRING_CODE) then
-        codeBtn.Text = "✅ Copied!"
-        wait(1)
-        codeBtn.Text = "📋 " .. PAIRING_CODE
-    else
-        codeBtn.Text = "❌ Failed"
-        wait(1)
-        codeBtn.Text = "📋 " .. PAIRING_CODE
-    end
-end)
-
 urlBtn.MouseButton1Click:Connect(function()
-    if copyToClipboard(LOGIN_URL) then
-        urlBtn.Text = "✅ Copied!"
-        wait(1)
-        urlBtn.Text = "🔗 Login Page"
-    else
-        urlBtn.Text = "❌ Failed"
-        wait(1)
-        urlBtn.Text = "🔗 Login Page"
-    end
+    copyToClipboard(LOGIN_URL)
+    urlBtn.Text = "✅ Copied!"
+    wait(1)
+    urlBtn.Text = "🔗 Login Page"
 end)
 
 print("✅ F-BOX Loaded - Code: " .. PAIRING_CODE)
 
+-- ========== COMMAND LOOP ==========
 print("📡 Menunggu command...")
 
 while true do
-    local command = getCommand()
+    local success, response = pcall(function()
+        return request({
+            Url = SERVER_URL .. "/api/command",
+            Method = "GET"
+        })
+    end)
     
-    if command and command ~= "null" then
-        print("Command diterima!")
-        local func = loadstring(command)
+    if success and response.StatusCode == 200 and response.Body and response.Body ~= "null" then
+        print("📥 Command diterima: " .. response.Body)
+        local func, err = loadstring(response.Body)
         if func then
-            local success = pcall(func)
-            print(success and "✅" or "❌")
+            local ok, result = pcall(func)
+            if ok then
+                print("✅ Sukses")
+            else
+                print("❌ Error: " .. tostring(result))
+            end
+        else
+            print("❌ Loadstring error: " .. tostring(err))
         end
     end
-    
     wait(2)
 end
 `;
